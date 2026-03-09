@@ -1,10 +1,8 @@
 #include <sourcemod>
 #include <cstrike>
 #include <sdktools>
-
 #pragma newdecls required
 #pragma semicolon 1
-
 public Plugin myinfo =
 {
 	name = "Round End Sound Random",
@@ -12,28 +10,21 @@ public Plugin myinfo =
 	description = "Precaches all sounds from casualgomvp and plays a random one at the end of each round",
 	version = "1.0.0"
 };
-
 ArrayList g_SoundList;
-
 public void OnPluginStart()
 {
-	// Hook the round end event
+	// Hook the round end event - only needs to be hooked once
 	HookEvent("round_end", Event_RoundEnd);
 	
-	// Load and precache sounds from casualgomvp directory
-	LoadAndPrecacheSounds();
+	// Load sounds list for playing (loads once on plugin start)
+	LoadSoundsList();
 }
-
 public void OnMapStart()
 {
- 	// Hook the round end event
-	HookEvent("round_end", Event_RoundEnd);
-	
-	// Load and precache sounds from casualgomvp directory
-	LoadAndPrecacheSounds();
+	// Precache and add to downloads table on each map start
+	PrecacheSounds();
 }
-
-void LoadAndPrecacheSounds()
+void LoadSoundsList()
 {
 	if (g_SoundList != null)
 	{
@@ -61,31 +52,40 @@ void LoadAndPrecacheSounds()
 			if (StrContains(filename, ".mp3") != -1 || StrContains(filename, ".wav") != -1)
 			{
 				g_SoundList.PushString(filename);
-				
-				// Precache and add to downloads table
-				char soundPath[256];
-				FormatEx(soundPath, sizeof(soundPath), "casualgomvp/%s", filename);
-				PrecacheSoundFile(soundPath);
 			}
 		}
 	}
 	
 	delete dir;
 	
-	LogMessage("Loaded and precached %d sound(s) from casualgomvp directory", g_SoundList.Length);
+	LogMessage("Loaded %d sound(s) from casualgomvp directory", g_SoundList.Length);
 }
-
-void PrecacheSoundFile(const char[] soundFile)
+void PrecacheSounds()
 {
-	// Precache the sound
-	PrecacheSound(soundFile, true);
+	if (g_SoundList == null || g_SoundList.Length == 0)
+	{
+		LogError("Sound list is empty!");
+		return;
+	}
 	
-	// Add to downloads table
-	char fullPath[256];
-	FormatEx(fullPath, sizeof(fullPath), "sound/%s", soundFile);
-	AddFileToDownloadsTable(fullPath);
+	for (int i = 0; i < g_SoundList.Length; i++)
+	{
+		char soundFile[256];
+		g_SoundList.GetString(i, soundFile, sizeof(soundFile));
+		
+		// Precache the sound
+		char soundPath[256];
+		FormatEx(soundPath, sizeof(soundPath), "casualgomvp/%s", soundFile);
+		PrecacheSound(soundPath, true);
+		
+		// Add to downloads table
+		char fullPath[256];
+		FormatEx(fullPath, sizeof(fullPath), "sound/%s", soundPath);
+		AddFileToDownloadsTable(fullPath);
+	}
+	
+	LogMessage("Precached and added %d sound(s) to downloads table", g_SoundList.Length);
 }
-
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_SoundList == null || g_SoundList.Length == 0)
