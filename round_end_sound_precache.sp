@@ -24,6 +24,15 @@ public void OnPluginStart()
 	LoadAndPrecacheSounds();
 }
 
+public void OnMapStart()
+{
+ 	// Hook the round end event
+	HookEvent("round_end", Event_RoundEnd);
+	
+	// Load and precache sounds from casualgomvp directory
+	LoadAndPrecacheSounds();
+}
+
 void LoadAndPrecacheSounds()
 {
 	if (g_SoundList != null)
